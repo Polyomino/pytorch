@@ -34,6 +34,7 @@ inductor_fallback_ops: dict[str, dict[str, list[str]]] = {
     "aten._embedding_bag_per_sample_weights_backward.default": {},
     "aten._embedding_bag.default": {},
     "aten._fft_c2c.default": {},
+    "aten.fill_.Scalar": {},
     "aten._fft_r2c.default": {},
     "aten._flash_attention_backward.default": {},
     "aten._flash_attention_forward.default": {},
