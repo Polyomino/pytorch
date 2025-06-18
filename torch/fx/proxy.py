@@ -204,6 +204,32 @@ class TracerBase:
         elif self.module_stack:
             node.meta["nn_module_stack"] = copy.copy(self.module_stack)
 
+        if self.record_stack_traces and not node.stack_trace:
+            from torch.fx.experimental.symbolic_shapes import uninteresting_files
+
+            user_frame_summary = CapturedTraceback.extract().summary()
+            if user_frame_summary:
+                first_forward = -1
+                for i, frame in enumerate(user_frame_summary):
+                    if frame.name == "forward":
+                        user_frame_summary = user_frame_summary[i:]
+                        first_forward = i
+                        break
+
+                # Not having a "forward" call in the stacktrace implies the
+                # stacktrace will probably be irrelevant
+                if first_forward == -1:
+                    user_frame_summary = []
+
+                stack_trace = [
+                    frame
+                    for frame in user_frame_summary
+                    if frame.filename not in uninteresting_files()
+                ]
+                if stack_trace:
+                    stack_trace = traceback.StackSummary.from_list(stack_trace)
+                    node.stack_trace = "".join(stack_trace.format()).strip()
+
         log.debug("create_node %s", node)
         return node
 
@@ -244,31 +270,6 @@ class TracerBase:
             proxy = self.proxy(node)
         else:
             proxy = proxy_factory_fn(node)
-
-        if self.record_stack_traces and not proxy.node.stack_trace:
-            from torch.fx.experimental.symbolic_shapes import uninteresting_files
-
-            user_frame_summary = CapturedTraceback.extract().summary()
-            if user_frame_summary:
-                first_forward = -1
-                for i, frame in enumerate(user_frame_summary):
-                    if frame.name == "forward":
-                        user_frame_summary = user_frame_summary[i:]
-                        first_forward = i
-                        break
-
-                # Not having a "forward" call in the stacktrace implies the
-                # stacktrace will probably be irrelevant
-                if first_forward == -1:
-                    user_frame_summary = []
-
-                stack_trace = [
-                    frame
-                    for frame in user_frame_summary
-                    if frame.filename not in uninteresting_files()
-                ]
-                stack_trace = traceback.StackSummary.from_list(stack_trace)
-                proxy.node.stack_trace = "".join(stack_trace.format()).strip()
 
         return proxy
 
