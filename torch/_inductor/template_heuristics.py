@@ -693,7 +693,7 @@ class CUDAConfigHeuristic(BaseConfigHeuristic):
         elif capability >= (8, 0):
             default_config = self.a100_default_flex_config.get((dtype, head_dim), default_config)
         else:
-            super().get_flex_attn_fwd_configs()
+            super().get_flex_attn_fwd_configs(head_dim, dtype)
 
         if default_config not in flex_attn_fwd_configs:
             flex_attn_fwd_configs.append(default_config)
